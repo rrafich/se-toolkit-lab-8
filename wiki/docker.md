@@ -22,7 +22,9 @@
   - [Remove all containers](#remove-all-containers)
 - [Remove the container running at the port](#remove-the-container-running-at-the-port)
 - [Troubleshooting](#troubleshooting)
-  - [`Bind for <host>:<port> failed: port is already allocated`](#bind-for-hostport-failed-port-is-already-allocated)
+  - [Image pull fails](#image-pull-fails)
+  - [Port conflict (`port is already allocated`)](#port-conflict-port-is-already-allocated)
+  - [DNS resolution errors (`getaddrinfo EAI_AGAIN`)](#dns-resolution-errors-getaddrinfo-eai_again)
 
 ## What is `Docker`
 
@@ -233,13 +235,48 @@ If you installed `Docker Desktop`:
 ## Troubleshooting
 
 <!-- no toc -->
-- [`Bind for <host>:<port> failed: port is already allocated`](#bind-for-hostport-failed-port-is-already-allocated)
+- [Image pull fails](#image-pull-fails)
+- [Port conflict (`port is already allocated`)](#port-conflict-port-is-already-allocated)
+- [DNS resolution errors (`getaddrinfo EAI_AGAIN`)](#dns-resolution-errors-getaddrinfo-eai_again)
 
-### `Bind for <host>:<port> failed: port is already allocated`
+### Image pull fails
+
+Steps to fix:
+
+1. [Connect to the correct network](./vm.md#connect-to-the-correct-network).
+
+### Port conflict (`port is already allocated`)
 
 If `docker compose up` fails with an error like `Bind for <host>:<port> failed: port is already allocated`,
 probably a container from a previous run is still occupying that port.
 
+Steps to fix:
+
 1. [Remove the container running at the port](#remove-the-container-running-at-the-port).
 
-2. Start the services again.
+### DNS resolution errors (`getaddrinfo EAI_AGAIN`)
+
+If the build hangs or you see [DNS](./computer-networks.md#dns) errors like `getaddrinfo EAI_AGAIN registry.npmjs.org`, [`Docker`](./docker.md#what-is-docker) cannot resolve [domain names](./computer-networks.md#domain-name).
+This is a university network DNS issue.
+
+Steps to fix:
+
+1. To add `Google` DNS to `Docker`,
+
+   [run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
+
+   ```terminal
+   sudo tee /etc/docker/daemon.json <<'EOF'
+   {
+     "dns": ["8.8.8.8", "8.8.4.4"]
+   }
+   EOF
+   ```
+
+2. To restart the `docker` service,
+
+   [run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
+
+   ```terminal
+   sudo systemctl restart docker
+   ```

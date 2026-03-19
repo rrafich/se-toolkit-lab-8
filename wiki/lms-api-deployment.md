@@ -9,11 +9,6 @@
   - [Start the services (REMOTE)](#start-the-services-remote)
   - [Populate the database (LOCAL)](#populate-the-database-local)
   - [Verify the deployment (LOCAL)](#verify-the-deployment-local)
-- [Troubleshooting](#troubleshooting)
-  - [Port conflict (`port is already allocated`)](#port-conflict-port-is-already-allocated)
-  - [Containers exit immediately](#containers-exit-immediately)
-  - [Image pull fails](#image-pull-fails)
-  - [DNS resolution errors (`getaddrinfo EAI_AGAIN`)](#dns-resolution-errors-getaddrinfo-eai_again)
 
 ## About the LMS API deployment
 
@@ -217,42 +212,3 @@ You need to run the ETL pipeline to populate it with data from the [`Autochecker
    > - The ETL sync completed successfully ([Populate the database](#populate-the-database-local)).
    > - You entered the correct API key in the frontend.
    > - Try selecting a different lab in the dropdown (e.g., `lab-04`).
-
-## Troubleshooting
-
-### Port conflict (`port is already allocated`)
-
-[Remove all containers](./docker.md#remove-all-containers), then run the `docker compose up` command again.
-
-### Containers exit immediately
-
-1. [Stop and remove all containers and volumes](./docker-compose.md#stop-and-remove-all-containers-and-volumes).
-
-2. To rebuild all containers,
-
-   [run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
-
-   ```terminal
-   docker compose --env-file .env.docker.secret up --build -d
-   ```
-
-### Image pull fails
-
-1. [Connect to the correct network](./vm.md#connect-to-the-correct-network).
-
-### DNS resolution errors (`getaddrinfo EAI_AGAIN`)
-
-If the build hangs or you see DNS errors like `getaddrinfo EAI_AGAIN registry.npmjs.org`, [`Docker`](./docker.md#what-is-docker) cannot resolve domain names. This is a university network DNS issue. Add Google DNS to `Docker`:
-
-[Run in the `VS Code Terminal`](./vs-code.md#run-a-command-in-the-vs-code-terminal):
-
-```terminal
-sudo tee /etc/docker/daemon.json <<'EOF'
-{
-  "dns": ["8.8.8.8", "8.8.4.4"]
-}
-EOF
-sudo systemctl restart docker
-```
-
-Then run the `docker compose up` command again.

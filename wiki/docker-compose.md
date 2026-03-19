@@ -13,6 +13,8 @@
   - [Stop and remove all containers](#stop-and-remove-all-containers)
   - [Stop and remove all containers and volumes](#stop-and-remove-all-containers-and-volumes)
   - [Stop and remove all containers, volumes, and images](#stop-and-remove-all-containers-volumes-and-images)
+- [Troubleshooting](#troubleshooting)
+  - [Containers exit immediately](#containers-exit-immediately)
 
 ## What is `Docker Compose`
 
@@ -116,3 +118,16 @@ services:
    ```terminal
    docker compose --env-file .env.docker.secret down -v --rmi all
    ```
+
+## Troubleshooting
+
+Cases:
+
+<!-- no toc -->
+- [Containers exit immediately](#containers-exit-immediately)
+
+### Containers exit immediately
+
+Steps to fix:
+
+1. [Stop and remove all containers and volumes](#stop-and-remove-all-containers-and-volumes).
