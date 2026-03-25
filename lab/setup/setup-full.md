@@ -17,9 +17,9 @@
     - [1.4.4. (UPD) Clean up `Docker`](#144-upd-clean-up-docker)
     - [1.4.5. Set up `Git`](#145-set-up-git)
   - [1.5. (UPD) Open in `VS Code` the `software-engineering-toolkit` directory (LOCAL)](#15-upd-open-in-vs-code-the-software-engineering-toolkit-directory-local)
-  - [1.6. Clone your fork (LOCAL)](#16-clone-your-fork-local)
+  - [1.6. Clone your fork](#16-clone-your-fork)
     - [1.6.1. (UPD) Copy your fork URL](#161-upd-copy-your-fork-url)
-    - [1.6.2. (UPD) Clone your fork](#162-upd-clone-your-fork)
+    - [1.6.2. (UPD) Clone your fork (LOCAL)](#162-upd-clone-your-fork-local)
   - [1.7. (UPD) Set up `VS Code` in the lab repository directory (LOCAL)](#17-upd-set-up-vs-code-in-the-lab-repository-directory-local)
   - [1.8. Create a new VM](#18-create-a-new-vm)
   - [1.9. Set up `Python`](#19-set-up-python)
@@ -30,11 +30,12 @@
     - [1.10.2. (UPD) Install `pnpm` (LOCAL)](#1102-upd-install-pnpm-local)
   - [1.11. (UPD) Set up `Qwen Code` (LOCAL)](#111-upd-set-up-qwen-code-local)
   - [1.12. Set up the VM](#112-set-up-the-vm)
-  - [1.13. (UPD) Deploy the LMS API (REMOTE)](#113-upd-deploy-the-lms-api-remote)
-  - [1.14. (UPD) Set up the `Qwen Code` API (REMOTE)](#114-upd-set-up-the-qwen-code-api-remote)
-  - [1.15. Set up the `Telegram` bot](#115-set-up-the-telegram-bot)
-  - [1.16. Set up the `Autochecker` bot](#116-set-up-the-autochecker-bot)
-  - [1.17. Check the setup using the `Autochecker` bot](#117-check-the-setup-using-the-autochecker-bot)
+  - [1.13. (UPD) Clone your fork on the VM (REMOTE)](#113-upd-clone-your-fork-on-the-vm-remote)
+  - [1.14. (UPD) Deploy the LMS API (REMOTE)](#114-upd-deploy-the-lms-api-remote)
+  - [1.15. (UPD) Set up the `Qwen Code` API (REMOTE)](#115-upd-set-up-the-qwen-code-api-remote)
+  - [1.16. Set up the `Telegram` bot](#116-set-up-the-telegram-bot)
+  - [1.17. Set up the `Autochecker` bot](#117-set-up-the-autochecker-bot)
+  - [1.18. Check the setup using the `Autochecker` bot](#118-check-the-setup-using-the-autochecker-bot)
 - [2. Optional steps](#2-optional-steps)
   - [2.1. (UPD) Set up `gh` (LOCAL)](#21-upd-set-up-gh-local)
   - [2.2. Set up `Nix` (LOCAL)](#22-set-up-nix-local)
@@ -177,7 +178,7 @@ See [tools](../../wiki/software-types.md#tool).
 
 3. (`Windows` only) [Reopen the directory in `WSL`](../../wiki/vs-code.md#windows-only-reopen-the-directory-in-wsl).
 
-### 1.6. Clone your fork (LOCAL)
+### 1.6. Clone your fork
 
 #### 1.6.1. (UPD) Copy your fork URL
 
@@ -189,7 +190,7 @@ See [tools](../../wiki/software-types.md#tool).
 
    See [`<your-github-username>`](../../wiki/github.md#your-github-username-placeholder).
 
-#### 1.6.2. (UPD) Clone your fork
+#### 1.6.2. (UPD) Clone your fork (LOCAL)
 
 1. [Clone your lab repository fork](../../wiki/lab.md#clone-your-lab-repository-fork).
 
@@ -269,26 +270,30 @@ See [tools](../../wiki/software-types.md#tool).
 
 1. [Set up the VM](../../wiki/vm.md#set-up-the-vm).
 
-### 1.13. (UPD) Deploy the LMS API (REMOTE)
+### 1.13. (UPD) Clone your fork on the VM (REMOTE)
+
+1. [Set up the lab repository directory (REMOTE)](../../wiki/lab.md#set-up-the-lab-repository-directory).
+
+### 1.14. (UPD) Deploy the LMS API (REMOTE)
 
 1. [Deploy the LMS API on your VM](../../wiki/lms-api-deployment.md#deploy-the-lms-api-on-the-vm).
 
-### 1.14. (UPD) Set up the `Qwen Code` API (REMOTE)
+### 1.15. (UPD) Set up the `Qwen Code` API (REMOTE)
 
 1. [Set up the `Qwen Code` API on your VM](../../wiki/qwen-code-api-deployment.md#deploy-the-qwen-code-api-remote).
 2. [Check that the `Qwen Code` API is accessible on your local machine (LOCAL)](../../wiki/qwen-code-api.md#check-that-the-qwen-code-api-is-accessible).
 
-### 1.15. Set up the `Telegram` bot
+### 1.16. Set up the `Telegram` bot
 
 1. [Create a `Telegram` bot](../../wiki/bot.md#create-a-telegram-bot).
 2. [Configure the environment for the bot on your VM (REMOTE)](../../wiki/client-telegram-bot.md#configure-the-environment-remote).
 3. [Install `uv` (REMOTE)](../../wiki/python.md#install-uv).
 
-### 1.16. Set up the `Autochecker` bot
+### 1.17. Set up the `Autochecker` bot
 
 1. [Set up the `Autochecker` bot](../../wiki/autochecker.md#set-up-the-autochecker-bot)
 
-### 1.17. Check the setup using the `Autochecker` bot
+### 1.18. Check the setup using the `Autochecker` bot
 
 1. [Check the `Setup` task](../../wiki/autochecker.md#check-the-task-using-the-autochecker-bot).
 
