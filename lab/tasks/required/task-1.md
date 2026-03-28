@@ -224,9 +224,17 @@ The agent works, but it could be smarter about *how* it uses tools. A **skill pr
    The skill should teach the agent:
    - Which `lms_*` tools are available and when to use each one
    - When a lab parameter is needed and not provided, ask the user which lab
+   - If an interactive UI tool is available later, prefer a structured lab-choice reply instead of a plain follow-up question
    - Format numeric results nicely (percentages, counts)
    - Keep responses concise
    - When the user asks "what can you do?", explain its current tools and limits clearly
+
+   A good strategy rule looks like this:
+
+   - if the user asks for scores, pass rates, completion, groups, timeline, or top learners without naming a lab, call `lms_labs` first
+   - if multiple labs are available, ask the user to choose one
+   - when a structured UI delivery tool is available, prefer a `choice` response over plain text
+   - otherwise, fall back to a normal text question such as "Which lab do you mean?"
 
    > **Hint:** Look at the tools in `mcp/mcp-lms/src/mcp_lms/server.py` to see what's available and what parameters each tool needs.
 
@@ -248,7 +256,7 @@ The agent works, but it could be smarter about *how* it uses tools. A **skill pr
 
 ### Checkpoint for Part C
 
-1. Ask the agent **"Show me the scores"** (without specifying a lab) — it should ask you which lab, or list available labs.
+1. Ask the agent **"Show me the scores"** (without specifying a lab) — it should ask you which lab, or list available labs. At this stage a plain text follow-up is fine; Task 2 will connect structured UI delivery for web clients.
 2. Paste the response into `REPORT.md` under `## Task 1C — Skill prompt`.
 
 ---
@@ -258,5 +266,5 @@ The agent works, but it could be smarter about *how* it uses tools. A **skill pr
 - Nanobot is installed in the repo-local `nanobot/` project from either the `main` archive or a pinned commit archive, and configured via `nanobot onboard`.
 - The agent responds to general questions via the repo-local `nanobot/config.json`.
 - MCP tools are configured and the agent returns real backend data.
-- A skill prompt exists that guides the agent's tool usage.
+- A skill prompt exists that guides the agent's tool usage, including asking for missing lab context and preferring structured choices when supported later.
 - `REPORT.md` contains responses from all three checkpoints.

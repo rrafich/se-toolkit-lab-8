@@ -19,6 +19,7 @@ Keep this request flow in mind while working:
 ```text
 browser -> caddy -> nanobot webchat channel -> nanobot gateway -> mcp_lms -> backend
 nanobot gateway -> qwen-code-api -> Qwen
+nanobot gateway -> mcp_webchat -> nanobot webchat UI relay -> browser
 ```
 
 If something fails, identify which hop is broken instead of debugging the
@@ -142,12 +143,13 @@ In Task 1 you ran `nanobot agent` from the VM terminal. For production, nanobot 
 
 ## Part B — Add the WebSocket channel and Flutter web client
 
-Nanobot doesn't ship with a WebSocket channel — it has Telegram, Discord, WhatsApp, etc. but no raw WebSocket. We built a custom channel plugin (`nanobot_webchat`) that adds this capability, and a Flutter web app that connects to it.
+Nanobot doesn't ship with a WebSocket channel — it has Telegram, Discord, WhatsApp, etc. but no raw WebSocket. We built a custom channel plugin (`nanobot_webchat`) that adds this capability, a small MCP server (`mcp_webchat`) that can deliver structured UI messages back to the active chat, and a Flutter web app that connects to it.
 
-Both are in a single repository. The webchat plugin handles:
+All of these pieces are in a single repository. The webchat stack handles:
 
 - WebSocket connections protected by a deployment access key (`?access_key=...` query param, validated against `NANOBOT_ACCESS_KEY`)
 - Structured response rendering when you want it (`choice`, `confirm`, `composite`)
+- Delivery of structured UI payloads from the agent through the `mcp_webchat` MCP tool
 
 > [!NOTE]
 > Keep the client generic. Buttons/chips are optional. A clear welcome message and a good first prompt are more important than fancy UI.
@@ -160,27 +162,38 @@ Both are in a single repository. The webchat plugin handles:
    git submodule add https://github.com/inno-se-toolkit/nanobot-websocket-channel
    ```
 
-   This repo contains a `nanobot-websocket-channel/` workspace with three parts:
+   This repo contains a `nanobot-websocket-channel/` workspace with four relevant parts:
    - `nanobot-webchat/` — the Python project for the WebSocket channel plugin
+   - `mcp-webchat/` — the Python project for the MCP server that sends structured UI messages to the active web chat
    - `client-web-flutter/` — Flutter web chat UI
    - `client-telegram-bot/` — Telegram bot (optional task)
 
-   All three live under `nanobot-websocket-channel/`.
+   All four live under `nanobot-websocket-channel/`.
 
-2. Install the webchat channel plugin into your nanobot environment:
+2. Install the webchat channel plugin and the UI-delivery MCP server into your nanobot environment:
 
    ```terminal
    cd nanobot
    uv add nanobot-webchat --editable ../nanobot-websocket-channel/nanobot-webchat
+   uv add mcp-webchat --editable ../nanobot-websocket-channel/mcp-webchat
    ```
 
-   This registers the `webchat` channel type in nanobot via a Python entry point. You can verify: `nanobot` will now recognize `webchat` as a valid channel in the config.
+   This does two different jobs:
 
-3. Update your `entrypoint.py` so it also injects the webchat channel settings from Docker env vars:
+   - `nanobot-webchat` registers the `webchat` channel type in nanobot via a Python entry point
+   - `mcp-webchat` provides an MCP tool for sending structured UI payloads back to the active chat
+
+   The current tool name exposed to the agent is `mcp_webchat_ui_message`.
+
+3. Update your `entrypoint.py` so it also injects the webchat channel settings and the webchat MCP server settings from Docker env vars:
 
    - enable the `webchat` channel
    - set its host from `NANOBOT_WEBCHAT_CONTAINER_ADDRESS`
    - set its port from `NANOBOT_WEBCHAT_CONTAINER_PORT`
+   - configure an MCP server that runs `python -m mcp_webchat`
+   - pass the UI relay URL and token to that MCP server via environment variables
+
+   In the current stack, that MCP server is what lets the agent send validated `choice`, `confirm`, and `composite` payloads to the active browser chat instead of printing raw JSON into a text answer.
 
 4. Make sure your `nanobot/config.json` has the webchat channel enabled:
 
@@ -193,9 +206,19 @@ Both are in a single repository. The webchat plugin handles:
     }
    ```
 
+   Also make sure your agent instructions or skill prompt teach the agent to use the webchat MCP tool when an interactive reply is better than plain text. For example:
+
+   - use `mcp_webchat_ui_message` for a lab picker when the user asks "Show me the scores" without naming a lab
+   - use `type: "choice"` for multiple options
+   - use `type: "confirm"` for confirmations
+   - use `type: "composite"` when you want explanatory text plus buttons
+   - on channels that do not support this tool, fall back to normal text
+
    By the end of Part B, you should have modified at least:
 
    - `nanobot/config.json`
+   - `nanobot/entrypoint.py`
+   - `nanobot/workspace/skills/lms/SKILL.md` or `nanobot/workspace/AGENTS.md`
    - `caddy/Caddyfile`
    - `docker-compose.yml`
 
@@ -268,6 +291,7 @@ Both are in a single repository. The webchat plugin handles:
 10. Open `http://<your-vm-ip-address>:42002/flutter` in your browser. Log in with your `NANOBOT_ACCESS_KEY`. Start by asking the agent:
     - `What can you do in this system?`
     - `How is the backend doing?`
+    - `Show me the scores`
 
     > [!TIP]
     > The Flutter client stores the access key in browser storage. If login
@@ -278,6 +302,7 @@ Both are in a single repository. The webchat plugin handles:
 
     - `Processing message from webchat:...`
     - `Tool call: mcp_lms_lms_labs({...})` or `Tool call: mcp_lms_lms_health({...})`
+    - `Tool call: mcp_webchat_ui_message({...})` when the agent sends a structured UI reply
     - `Response to webchat:...`
 
     A healthy end-to-end path looks like this:
@@ -286,6 +311,7 @@ Both are in a single repository. The webchat plugin handles:
     - the access key is accepted
     - the agent answers a general capability question
     - the agent answers an LMS-backed question using real tools
+    - when you ask an ambiguous question such as `Show me the scores`, the client renders a structured lab choice instead of showing raw JSON
 
     Quick troubleshooting map:
 
@@ -293,6 +319,7 @@ Both are in a single repository. The webchat plugin handles:
     - slow model -> answer arrives late, but the socket stays alive
     - stale frontend bundle -> hard refresh fixes missing recent UI changes
     - blank `/flutter` page -> check the Flutter volume mount and Caddy route
+    - raw JSON appears in chat instead of buttons -> check that `mcp-webchat` is installed, wired into `mcpServers`, and referenced by your skill/agent instructions
 
     Common symptom table:
 
@@ -318,7 +345,8 @@ Both are in a single repository. The webchat plugin handles:
 2. Open `http://<your-vm-ip-address>:42002/flutter` — you should see a login screen.
 3. Log in with your `NANOBOT_ACCESS_KEY`, ask `What can you do in this system?`, then ask `How is the backend doing?`
 4. The second answer should be backed by real LMS/backend data, not just a generic greeting.
-5. Screenshot the conversation and add it to `REPORT.md` under `## Task 2B — Web client`. The screenshot should show at least one real agent answer, not only the welcome screen.
+5. Ask `Show me the scores` without naming a lab. If multiple labs exist, the client should render a structured choice prompt rather than raw JSON text.
+6. Screenshot the conversation and add it to `REPORT.md` under `## Task 2B — Web client`. The screenshot should show at least one real agent answer and, if multiple labs exist, the structured lab-choice UI.
 
 ---
 
@@ -327,5 +355,7 @@ Both are in a single repository. The webchat plugin handles:
 - Nanobot runs as a Docker Compose service via `nanobot gateway`.
 - After the webchat channel is installed, the WebSocket endpoint at `/ws/chat` responds when called with the correct `access_key`.
 - The webchat channel plugin is installed and the Flutter client connects through it.
+- The `mcp-webchat` MCP server is installed and wired so the agent can deliver structured UI messages to the active chat.
 - The Flutter web client is accessible at `/flutter` and protected by a student-chosen `NANOBOT_ACCESS_KEY`.
+- When the agent needs the user to choose among multiple labs, it can render a structured choice in the Flutter client instead of dumping raw JSON.
 - `REPORT.md` contains responses from both checkpoints.
