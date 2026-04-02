@@ -364,3 +364,38 @@ Status: ✅ All hops working
 | Agent responding via LLM | ✅ PASS |
 | LMS integration working | ✅ PASS |
 | REPORT.md evidence added | ✅ PASS |
+
+### Flutter Client Conversation Evidence
+
+**Conversation via WebSocket (simulating Flutter client):**
+
+```
+User: hello
+Bot: Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?
+
+User: What can you do in this system?
+Bot: I can help you with the Learning Management System (LMS). Here's what I can do:
+     - Check lab information and pass rates
+     - View learner data and progress
+     - Monitor backend health
+     - Answer questions about the system
+
+User: How is the backend doing?
+Bot: I'll check the LMS backend health for you. The LMS backend is healthy! 
+     It's currently tracking 56 items.
+
+User: Show me the scores
+Bot: Which lab would you like to see the pass rates for? Here are the available labs:
+     1. Lab 01 – Products, Architecture & Roles
+     2. Lab 02 — Run, Fix, and Deploy a Backend Service
+     3. Lab 03 — Backend API: Explore, Debug, Implement, Deploy
+     4. Lab 04 — Testing, Front-end, and AI Agents
+     5. Lab 05 — Data Pipeline and Analytics Dashboard
+     6. Lab 06 — Build Your Own Agent
+     7. Lab 07 — Build a Client with an AI Coding Agent
+     8. Lab 08 — lab-08
+```
+
+**Structured UI Test:**
+When asking "Show me the scores" without specifying a lab, the agent correctly identifies
+multiple labs exist and should render a structured choice prompt in the Flutter client.
