@@ -287,3 +287,33 @@ This conversation demonstrates:
 4. Response is sent back through the WebSocket to the Flutter client
 
 ---
+
+## Task 2 Fix Applied
+
+### Issue Found and Fixed
+
+**Problem:** The autochecker test was failing with "FAIL: could not reach LLM — Connection refused"
+
+**Root Cause:** Port mismatch in `.env.docker.secret`:
+- `QWEN_CODE_API_HOST_PORT` was set to `42005`
+- But the qwen-code-api container was actually mapped to port `42006`
+
+**Fix Applied:** Updated `.env.docker.secret` to use correct port:
+```bash
+QWEN_CODE_API_HOST_PORT=42006  # Was 42005
+```
+
+**Verification:**
+```terminal
+$ curl -H "Authorization: Bearer my-secret-qwen-key" http://localhost:42006/v1/models
+{"object":"list","data":[
+  {"id":"qwen3-coder-plus"},
+  {"id":"qwen3-coder-flash"},
+  {"id":"coder-model"},
+  {"id":"vision-model"}
+]}
+```
+
+The LLM API is now reachable from the VM shell using the environment variables in `.env.docker.secret`.
+
+---
