@@ -4,7 +4,7 @@ Usage:
     python scripts/query-qwen-code-api.py [OPTIONS] PROMPT
 
 Options:
-    --base-url URL   API base URL   (default: $LLM_API_BASE_URL or http://localhost:42005/v1)
+    --base-url URL   API base URL   (default: $LLM_API_BASE_URL or http://localhost:42006/v1)
     --port PORT      Shorthand for http://localhost:<PORT>/v1 (overrides --base-url)
     --api-key KEY    API key        (default: $LLM_API_KEY)
     --model MODEL    Model name     (default: $LLM_API_MODEL or "coder-model")
@@ -27,8 +27,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Query the Qwen Code API")
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("LLM_API_BASE_URL", "http://localhost:42005/v1"),
-        help="API base URL (default: $LLM_API_BASE_URL or http://localhost:42005/v1)",
+        default=os.environ.get("LLM_API_BASE_URL", "http://localhost:42006/v1"),
+        help="API base URL (default: $LLM_API_BASE_URL or http://localhost:42006/v1)",
     )
     parser.add_argument(
         "--port",

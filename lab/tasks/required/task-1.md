@@ -61,7 +61,7 @@ Start by reading the [official nanobot repository](https://github.com/HKUDS/nano
    - **agents.defaults.model** `coder-model`
    - **agents.defaults.provider** `custom`
    - **providers.custom.apiKey** your `QWEN_CODE_API_KEY` from `.env.docker.secret`
-   - **providers.custom.apiBase** `http://localhost:42005/v1`
+   - **providers.custom.apiBase** `http://localhost:42006/v1`
 
    This generates `config.json` and a `workspace/` directory in the current folder.
    Task 2 will Dockerize this same repo-local project.

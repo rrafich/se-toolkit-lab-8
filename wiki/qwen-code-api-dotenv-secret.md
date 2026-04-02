@@ -20,7 +20,7 @@ Default values: `qwen-code-api/.env.example` in the [`qwen-code-api` repository]
 
 The [`Qwen Code` API host port](./qwen-code-api.md#qwen-code-api-host-port).
 
-Default: `42005`
+Default: `42006`
 
 ## `QWEN_CODE_API_KEY`
 
