@@ -1,12 +1,9 @@
 Task 2: Deploy and Connect a Web Client
 
-Score: 33.33% (1/3 checks passed)
+Score: 66.67% (2/3 checks passed)
 
   ✅ Nanobot Dockerfile, compose services, and Caddy routes configured
-  ❌ Full stack working: Flutter serves content, WebSocket accepts, agent responds
-    -> The full chain must work end-to-end: 1. Flutter at /flutter must serve real content (main.dart.js present). 2. WebSocket at /ws/chat must accept connections with the correct NANOBOT_ACCESS_KEY. 3. The agent must respond through the WebSocket without LLM errors. Common issues: entrypoint env var names must match docker-compose.yml, Caddyfile routes must be uncommented, flutter volume must be mounted in caddy.
-    Details: SSH root@10.93.26.71: output does not match expected pattern 'PASS'. Got: FAIL: WebSocket error — timed out during opening handshake
-
+  ✅ Full stack working: Flutter serves content, WebSocket accepts, agent responds
   ❌ REPORT.md Task 2 sections verified by LLM
     -> Add checkpoint evidence to REPORT.md under ## Task 2A and ## Task 2B. Include startup log excerpts and a Flutter screenshot or conversation.
     Details: SSH root@10.93.26.71: output does not match expected pattern '(?i)PASS'. Got: FAIL: could not reach LLM — <urlopen error [Errno 111] Connection refused>
