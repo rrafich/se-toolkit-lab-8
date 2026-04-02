@@ -28,7 +28,17 @@ Get a specific trace by ID.
 
 ## When to Use
 
-1. **User asks about errors** → Start with `logs_error_count` to check if errors exist
+### For "What went wrong?" or "Check system health" queries:
+
+1. **Start with logs_error_count** — Check if there are recent errors
+2. **Use logs_search** — Get detailed error logs with trace_id
+3. **Extract trace_id** — From the log entries
+4. **Call traces_get** — Fetch the full trace to see the failure path
+5. **Summarize findings** — Combine log evidence + trace evidence
+
+### For general observability queries:
+
+1. **User asks about errors** → Start with `logs_error_count`
 2. **User wants details** → Use `logs_search` with relevant filters
 3. **Found a trace_id in logs** → Use `traces_get` to fetch the full trace
 4. **Investigating a service** → Use `traces_list` to see recent traces
@@ -37,8 +47,20 @@ Get a specific trace by ID.
 
 - **Summarize findings** — don't dump raw JSON
 - **Highlight errors** — point out severity:ERROR entries
-- **Extract trace_id** — if found, offer to fetch the full trace
+- **Extract trace_id** — if found, fetch the full trace
 - **Be concise** — focus on what matters to the user
+- **Chain evidence** — show how logs led to trace investigation
+
+## Example Investigation Flow
+
+**User:** "What went wrong?"
+
+**Your reasoning:**
+1. Call `logs_error_count(service="Learning Management Service", time_window="10m")`
+2. If errors > 0, call `logs_search(query="severity:ERROR", time_window="10m", limit=10)`
+3. Extract `trace_id` from log entries
+4. Call `traces_get(trace_id="<extracted_id>")`
+5. Summarize: "The logs show [error message] at [time]. The trace reveals the failure started at [operation] with [root cause]."
 
 ## Example Queries
 
@@ -56,9 +78,17 @@ traces_list(service="Learning Management Service", limit=10)
 traces_get(trace_id="abc123...")
 ```
 
-## Reasoning Flow
+## Key Fields to Extract
 
-1. User asks "Any errors?" → Call `logs_error_count` first
-2. If errors found → Call `logs_search` to get details
-3. If trace_id found in logs → Call `traces_get` for full picture
-4. Summarize: "Found X errors in the last Y minutes. The main issue was Z."
+From logs:
+- `_time` — when the error occurred
+- `severity` — error level
+- `event` — what operation failed
+- `error` — the error message
+- `trace_id` — for fetching the full trace
+
+From traces:
+- `spans[].operationName` — what operation failed
+- `spans[].tags["http.status_code"]` — HTTP status
+- `spans[].tags["error"]` — error details
+- `spans[].duration` — how long it took
