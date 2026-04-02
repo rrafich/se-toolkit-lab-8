@@ -326,14 +326,14 @@ The database starts empty. You need to run the ETL pipeline to populate it with 
 4. Verify the Qwen Code API is working:
 
    ```terminal
-   curl -s http://localhost:42006/v1/models -H "Authorization: Bearer YOUR_QWEN_CODE_API_KEY" | head -c 100
+   curl -s http://localhost:42005/v1/models -H "Authorization: Bearer YOUR_QWEN_CODE_API_KEY" | head -c 100
    ```
 
    You should see a JSON response with model information.
 
    > [!TIP]
    > If you get `Internal Server Error`, your Qwen token may have expired.
-   > Check: `curl -s -H "X-API-Key: YOUR_KEY" http://localhost:42006/health` — if `default_account.status` is `"expired"`, you need to refresh.
+   > Check: `curl -s -H "X-API-Key: YOUR_KEY" http://localhost:42005/health` — if `default_account.status` is `"expired"`, you need to refresh.
    > See [Qwen Code credentials file](../../wiki/qwen-code.md#qwen-code-credentials-file) for how to re-copy the credentials from your local machine to the VM.
 
 > [!IMPORTANT]
@@ -382,7 +382,7 @@ If you need a new key, follow the [Qwen Code API setup guide](../../wiki/qwen-co
 Verify the API works:
 
 ```terminal
-curl -s http://localhost:42006/v1/models -H "Authorization: Bearer YOUR_QWEN_CODE_API_KEY" | head -c 100
+curl -s http://localhost:42005/v1/models -H "Authorization: Bearer YOUR_QWEN_CODE_API_KEY" | head -c 100
 ```
 
 You should see a JSON response with model information.

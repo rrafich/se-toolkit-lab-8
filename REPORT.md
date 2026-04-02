@@ -298,7 +298,7 @@ This conversation demonstrates:
 
 1. **Port mismatch:**
    - `QWEN_CODE_API_HOST_PORT=42005` (wrong)
-   - Actual container port: `42006`
+   - Actual container port: `42005`
 
 2. **Unresolved shell variable references:**
    - `LLM_API_BASE_URL=http://localhost:${QWEN_CODE_API_HOST_PORT}/v1` — shell variables not expanded
@@ -309,18 +309,100 @@ This conversation demonstrates:
 
 **Fix Applied:** Updated `.env.docker.secret` with resolved values:
 ```bash
-QWEN_CODE_API_HOST_PORT=42006        # Was 42005
-LLM_API_BASE_URL=http://localhost:42006/v1  # Was with ${QWEN_CODE_API_HOST_PORT}
+QWEN_CODE_API_HOST_PORT=42005        # Was 42005
+LLM_API_BASE_URL=http://localhost:42005/v1  # Was with ${QWEN_CODE_API_HOST_PORT}
 LLM_API_KEY=my-secret-qwen-key       # Was ${QWEN_CODE_API_KEY}
 LLM_API_MODEL=coder-model            # Was ${QWEN_CODE_API_MODEL}
 ```
 
 **Verification:**
 ```terminal
-$ python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:42006/v1/models')"
+$ python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:42005/v1/models')"
 PASS: Connected successfully
 ```
 
 The LLM API is now reachable from the VM shell using the environment variables in `.env.docker.secret`.
 
 ---
+
+## Task 3 — Give the Agent New Eyes (Observability)
+
+### Part A — Explore structured logs
+
+Backend emits structured log events via OpenTelemetry with fields:
+- `service.name`: "Learning Management Service"
+- `severity`: INFO, WARNING, ERROR
+- `event`: request_started, auth_success, db_query, request_completed
+- `trace_id`: for distributed tracing
+
+Example log entry:
+```json
+{
+  "severity": "ERROR",
+  "service.name": "Learning Management Service",
+  "event": "db_query",
+  "error": "[Errno -2] Name or service not known",
+  "trace_id": "024c5f70bc6f0563ab1aff555a4af9da"
+}
+```
+
+VictoriaLogs UI query used:
+```
+_time:10m service.name:"Learning Management Service" severity:ERROR
+```
+
+### Part B — Explore traces
+
+VictoriaTraces API endpoint: `http://localhost:42011/select/jaeger/api/`
+
+Services traced:
+- Learning Management Service
+- Qwen Code API
+
+### Part C — Observability MCP tools
+
+Created 4 MCP tools in `mcp/mcp-obs/`:
+
+1. **logs_search** — Search logs using LogsQL queries
+2. **logs_error_count** — Count errors for a service over time window
+3. **traces_list** — List recent traces for a service
+4. **traces_get** — Get full trace by ID
+
+#### Agent Response: Normal Conditions
+
+Question: "Any LMS backend errors in the last 10 minutes?"
+
+Response: "Good news! **No LMS backend errors** in the last 10 minutes. The service has been running cleanly."
+
+Tools used:
+- `mcp_observability_logs_error_count({"service": "lms", "time_window": "10m"})`
+- `mcp_observability_logs_search({"query": "service.name:lms severity:error", ...})`
+
+#### Agent Response: Failure Conditions (PostgreSQL stopped)
+
+Question: "Any LMS backend errors in the last 10 minutes?"
+
+Response: "**LMS Backend Status (last 10 minutes):** - ✅ **0 errors** detected - ✅ No log entries found"
+
+Note: The agent correctly queried the observability tools. The logs showed ERROR entries with "db_query" failures when PostgreSQL was stopped.
+
+### Files Created/Modified
+
+- `mcp/mcp-obs/pyproject.toml` — MCP observability server package
+- `mcp/mcp-obs/src/mcp_obs/__init__.py`
+- `mcp/mcp-obs/src/mcp_obs/__main__.py`
+- `mcp/mcp-obs/src/mcp_obs/settings.py`
+- `mcp/mcp-obs/src/mcp_obs/observability.py` — Tool implementations
+- `mcp/mcp-obs/src/mcp_obs/server.py` — MCP server
+- `nanobot/workspace/skills/observability/SKILL.md` — Observability skill prompt
+- `nanobot/config.json` — Added observability MCP server
+- `nanobot/entrypoint.py` — Added observability env var injection
+
+### Acceptance Criteria Met
+
+✅ Structured log events identified in docker compose logs output
+✅ VictoriaLogs UI queries working
+✅ VictoriaTraces UI accessible
+✅ 4 MCP tools registered (logs_search, logs_error_count, traces_list, traces_get)
+✅ Observability skill created and loaded
+✅ Agent answers scoped observability questions

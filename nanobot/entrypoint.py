@@ -41,6 +41,14 @@ def main():
         if "NANOBOT_LMS_API_KEY" in os.environ:
             lms_env["NANOBOT_LMS_API_KEY"] = os.environ["NANOBOT_LMS_API_KEY"]
 
+    # Override MCP observability server env vars
+    if "tools" in config and "mcpServers" in config["tools"] and "observability" in config["tools"]["mcpServers"]:
+        obs_env = config["tools"]["mcpServers"]["observability"].setdefault("env", {})
+        if "NANOBOT_VICTORIALOGS_URL" in os.environ:
+            obs_env["NANOBOT_VICTORIALOGS_URL"] = os.environ["NANOBOT_VICTORIALOGS_URL"]
+        if "NANOBOT_VICTORIATRACES_URL" in os.environ:
+            obs_env["NANOBOT_VICTORIATRACES_URL"] = os.environ["NANOBOT_VICTORIATRACES_URL"]
+
     # Configure webchat channel
     if "NANOBOT_WEBCHAT_CONTAINER_ADDRESS" in os.environ:
         config.setdefault("channels", {}).setdefault("webchat", {})["host"] = os.environ["NANOBOT_WEBCHAT_CONTAINER_ADDRESS"]
