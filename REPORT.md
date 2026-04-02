@@ -155,3 +155,100 @@ Please let me know which lab you'd like to see the pass rates for, or I can show
 ```
 
 This confirms the LMS skill is working - the agent now asks for lab selection when needed instead of guessing or failing.
+
+---
+
+## Task 2A — Deploy nanobot as Docker service
+
+### Files Created
+
+1. **`nanobot/entrypoint.py`** — Python entrypoint that resolves environment variables into config at runtime
+2. **`nanobot/Dockerfile`** — Multi-stage Docker build using uv package manager
+
+### Startup Log Excerpt
+
+```
+nanobot-1  | Using config: /tmp/config.resolved.json
+nanobot-1  | 🐈 Starting nanobot gateway version 0.1.4.post5 on port 18790...
+nanobot-1  | ✓ Channels enabled: webchat
+nanobot-1  | ✓ Heartbeat: every 1800s
+nanobot-1  | 2026-04-02 11:08:15.218 | INFO     | nanobot.agent.tools.mcp:connect_mcp_servers:246 
+- MCP server 'lms': connected, 9 tools registered
+nanobot-1  | 2026-04-02 11:08:17.543 | INFO     | nanobot.agent.tools.mcp:connect_mcp_servers:246 
+- MCP server 'webchat': connected, 1 tools registered
+nanobot-1  | 2026-04-02 11:08:17.543 | INFO     | nanobot.agent.loop:run:280 - Agent loop started
+```
+
+### Configuration Changes
+
+- **`docker-compose.yml`**: Uncommented and configured `nanobot` service with:
+  - Build context pointing to `./nanobot`
+  - Volume mounts for nanobot, mcp, nanobot-websocket-channel, wiki, lab, contributing
+  - Environment variables for LLM API, LMS backend, webchat channel, and OpenTelemetry
+  - Dependencies on backend, qwen-code-api, and otel-collector
+
+- **`caddy/Caddyfile`**: Uncommented `/ws/chat` route:
+  ```
+  handle /ws/chat {
+      reverse_proxy http://nanobot:{$NANOBOT_WEBCHAT_CONTAINER_PORT}
+  }
+  ```
+
+- **`nanobot/config.json`**: Added webchat channel configuration
+
+---
+
+## Task 2B — Add Flutter web client
+
+### Files Modified
+
+- **`docker-compose.yml`**: 
+  - Uncommented `client-web-flutter` service building from `./nanobot-websocket-channel/client-web-flutter`
+  - Added `client-web-flutter` to caddy's `depends_on`
+  - Added `client-web-flutter:/srv/flutter:ro` volume mount to caddy service
+  - Added `NANOBOT_WEBCHAT_CONTAINER_PORT` environment variable to caddy
+
+- **`caddy/Caddyfile`**: Uncommented `/flutter` route:
+  ```
+  handle_path /flutter* {
+      root * /srv/flutter
+      try_files {path} /index.html
+      file_server
+  }
+  ```
+
+### Submodule Added
+
+- **`nanobot-websocket-channel/`** — Git submodule containing:
+  - `nanobot-webchat/` — WebSocket channel plugin for nanobot
+  - `mcp-webchat/` — MCP server for structured UI messages
+  - `client-web-flutter/` — Flutter web chat client
+  - `nanobot-channel-protocol/` — Channel protocol definitions
+
+### Packages Installed
+
+```terminal
+cd nanobot
+uv add nanobot-webchat --editable ../nanobot-websocket-channel/nanobot-webchat
+uv add mcp-webchat --editable ../nanobot-websocket-channel/mcp-webchat
+```
+
+### Container Status
+
+```
+NAME                                STATUS
+se-toolkit-lab-8-nanobot-1          Up
+se-toolkit-lab-8-caddy-1            Up
+se-toolkit-lab-8-backend-1          Up
+se-toolkit-lab-8-qwen-code-api-1    Up (healthy)
+```
+
+### Architecture
+
+```
+browser -> caddy (port 42002) -> nanobot webchat channel -> nanobot gateway -> mcp_lms -> backend
+                                          |
+                                          +-> nanobot gateway -> qwen-code-api -> Qwen
+                                          |
+                                          +-> nanobot gateway -> mcp_webchat -> browser
+```
