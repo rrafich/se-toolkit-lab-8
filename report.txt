@@ -1,10 +1,10 @@
-Task 2: Deploy and Connect a Web Client
+Task 3: Give the Agent New Eyes
 
 Score: 66.67% (2/3 checks passed)
 
-  ✅ Nanobot Dockerfile, compose services, and Caddy routes configured
-  ✅ Full stack working: Flutter serves content, WebSocket accepts, agent responds
-  ❌ REPORT.md Task 2 sections verified by LLM
-    -> Add checkpoint evidence to REPORT.md under ## Task 2A and ## Task 2B. Include startup log excerpts and a Flutter screenshot or conversation.
+  ✅ Observability skill and MCP tools for logs/traces exist
+  ✅ Deployed agent answers observability question via WebSocket
+  ❌ REPORT.md Task 3 sections verified by LLM
+    -> Add checkpoint evidence to REPORT.md under ## Task 3A, ## Task 3B, ## Task 3C. Include log excerpts, trace screenshots, and observability tool output.
     Details: SSH root@10.93.26.71: output does not match expected pattern '(?i)PASS'. Got: FAIL: could not reach LLM — <urlopen error [Errno 111] Connection refused>
 
