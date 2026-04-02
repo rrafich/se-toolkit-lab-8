@@ -266,3 +266,24 @@ All components are running and communicating successfully:
 - ✅ WebSocket accepts connections at `/ws/chat`
 - ✅ Agent processes messages and responds
 - ✅ Full stack working end-to-end
+
+### Flutter Conversation Transcript
+
+Below is a real conversation captured from the Flutter web client session:
+
+**User:** "How is the backend doing?"
+
+**Agent:** "The backend is doing well! ✅
+
+- **Status**: Healthy
+- **Item count**: 56 items in the database
+
+Everything looks good and..."
+
+This conversation demonstrates:
+1. Flutter web client successfully sends messages via WebSocket
+2. nanobot gateway receives and processes the message
+3. Agent calls the `mcp_lms_lms_health` tool to check backend status
+4. Response is sent back through the WebSocket to the Flutter client
+
+---
