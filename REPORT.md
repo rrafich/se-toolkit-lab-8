@@ -252,3 +252,63 @@ browser -> caddy (port 42002) -> nanobot webchat channel -> nanobot gateway -> m
                                           |
                                           +-> nanobot gateway -> mcp_webchat -> browser
 ```
+
+### WebSocket Test
+
+Successfully tested WebSocket connection:
+
+```terminal
+$ uv run --with websockets python -c "
+import asyncio
+import websockets
+
+async def test():
+    async with websockets.connect('ws://localhost:42002/ws/chat?access_key=my-nanobot-access-key') as ws:
+        print('CONNECTED')
+        await ws.send('hello')
+        response = await asyncio.wait_for(ws.recv(), timeout=30)
+        print(f'RESPONSE: {response}')
+
+asyncio.run(test())
+"
+
+CONNECTED
+RESPONSE: {"type":"text","content":"Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?","format":"markdown"}
+```
+
+### Flutter Client Verification
+
+Flutter web client is serving content at `/flutter`:
+- Main page loads with proper HTML
+- `main.dart.js` is present and being served
+- WebSocket connection works through Caddy proxy
+
+### Full Stack Verification
+
+The complete request flow is working:
+```
+browser -> caddy:42002 -> /ws/chat -> nanobot:8765 -> nanobot gateway -> qwen-code-api -> Qwen
+                                                              -> mcp_lms -> backend
+                                                              -> mcp_webchat -> browser
+```
+
+Latest nanobot logs show successful message processing:
+```
+nanobot-1  | 2026-04-02 15:06:50.763 | INFO     | nanobot.agent.loop:_process_message:425 - Processing message from webchat:5d9ec948-4985-45a6-9ccb-504d63bd70cd: hello
+nanobot-1  | 2026-04-02 15:06:54.193 | INFO     | nanobot.agent.loop:_process_message:479 - Response to webchat:5d9ec948-4985-45a6-9ccb-504d63bd70cd: Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?
+```
+
+### Note on Qwen Credentials
+
+The qwen-code-api service requires valid OAuth credentials to access the Qwen API.
+If the container shows "Token refresh returned a non-JSON response" errors,
+it means the credentials have expired and the token refresh is being blocked by WAF.
+
+**Solution:** Restart the qwen-code-api container to pick up fresh credentials from the host:
+
+```terminal
+docker compose --env-file .env.docker.secret restart qwen-code-api
+```
+
+The container's entrypoint script copies credentials from `/mnt/qwen-creds` (mounted from `~/.qwen` on the host)
+to `/home/nonroot/.qwen` at each startup.
