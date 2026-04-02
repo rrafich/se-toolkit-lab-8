@@ -271,3 +271,153 @@ The **3 most recent traces** all show the same error pattern:
 ✅ Agent answers scoped observability questions with raw data output
 ✅ Task 3B includes specific trace span descriptions
 ✅ Task 3C includes visible raw tool output in agent transcript
+
+## Task 4 — Diagnose a Failure and Make the Agent Proactive
+
+### Task 4A — Multi-step investigation
+
+**Enhanced observability skill** to guide one-shot investigation:
+- When user asks "What went wrong?" or "Check system health":
+  1. Call `logs_error_count` to check for recent errors
+  2. Call `logs_search` to get detailed error logs with trace_id
+  3. Extract `trace_id` from log entries
+  4. Call `traces_get` to fetch the full trace
+  5. Summarize findings combining log + trace evidence
+
+**Failure scenario:** PostgreSQL stopped
+
+**Agent investigation flow (from nanobot logs):**
+```
+Tool call: mcp_observability_logs_search({"query": "service.name:\"Learning Management Service\" AND severity:ERROR", "time_window": "10m", "limit": 50})
+Tool call: mcp_observability_traces_list({"service": "Learning Management Service", "limit": 20})
+Tool call: mcp_observability_logs_search({"query": "service.name:\"Learning Management Service\" AND (436 OR \"Name or service not known\" OR \"gaierror\")", "time_window": "10m", "limit": 30})
+```
+
+**Agent response:**
+```
+## LMS Backend Failure Analysis
+
+I found **two critical issues** affecting the Learning Management Service:
+
+### 🔴 Issue 1: Database Connection Failure
+- **Error**: `socket.gaierror: [Errno -2] Name or service not known`
+- **Cause**: PostgreSQL hostname `postgres:5432` cannot be resolved
+- **Impact**: All database queries failing
+
+### 🔴 Issue 2: External API Failure  
+- **Error**: `httpx.HTTPStatusError: Client error '436 status code 436'`
+- **URL**: `https://auche.namaz.live/api/items`
+- **Impact**: ETL sync pipeline failing
+
+### Evidence Chain
+1. **Logs** show `severity:ERROR` with `event:db_query` and connection errors
+2. **Traces** show span hierarchy: `GET /items/` → `db_query` → error
+3. **Root cause**: PostgreSQL service unavailable
+```
+
+### Task 4B — Scheduled health check via cron
+
+**Created cron job from Flutter chat:**
+```
+Tool call: cron({"action": "add", "every_seconds": 120, "message": "LMS Health Check: Check LMS backend health, search for errors in logs from the last 2 minutes, inspect a trace if errors found, and post a short summary"})
+Cron: added job 'LMS Health Check: Check LMS ba' (b37762b2)
+```
+
+**Cron job configuration:**
+- Runs every 120 seconds (2 minutes)
+- Checks LMS backend health
+- Searches for errors in last 2 minutes
+- Inspects traces if errors found
+- Posts summary to chat
+
+### Task 4C — Bug fix and recovery
+
+#### Root Cause
+**Planted bug location:** `backend/src/lms_backend/routers/items.py`
+
+**Bug description:** The `get_items()` function caught all exceptions and returned `404 Not Found` instead of the actual database error. This masked the real PostgreSQL failure.
+
+**Original code (buggy):**
+```python
+@router.get("/", response_model=list[ItemRecord])
+async def get_items(session: AsyncSession = Depends(get_session)):
+    try:
+        return await read_items(session)
+    except Exception as exc:
+        logger.warning("items_list_failed_as_not_found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Items not found",
+        ) from exc
+```
+
+#### Fix Applied
+**Changed to return 500 for database errors:**
+```python
+@router.get("/", response_model=list[ItemRecord])
+async def get_items(session: AsyncSession = Depends(get_session)):
+    try:
+        return await read_items(session)
+    except SQLAlchemyError as exc:
+        logger.error("items_list_database_error", extra={"error": str(exc)})
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(exc)}",
+        ) from exc
+    except Exception as exc:
+        logger.error("items_list_unexpected_error", extra={"error": str(exc)})
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {str(exc)}",
+        ) from exc
+```
+
+**Key changes:**
+1. Import `SQLAlchemyError` from `sqlalchemy.exc`
+2. Catch `SQLAlchemyError` separately with 500 status code
+3. Log at ERROR level instead of WARNING
+4. Include actual error message in response
+5. Applied same fix to `get_item()` and `put_item()` endpoints
+
+#### Post-fix failure check (PostgreSQL stopped)
+
+**Backend logs after fix:**
+```
+2026-04-02 22:51:44,877 ERROR [lms_backend.routers.items] - items_list_unexpected_error
+2026-04-02 22:51:44,878 ERROR [lms_backend.main] - request_completed
+INFO: 172.20.0.9:53010 - "GET /items/ HTTP/1.1" 500 Internal Server Error
+```
+
+**Before fix:** Response was `404 Not Found` (misleading)
+**After fix:** Response is `500 Internal Server Error` (accurate)
+
+#### Healthy follow-up (PostgreSQL restarted)
+
+After restarting PostgreSQL, the cron health check reports:
+```
+System looks healthy - no recent backend errors found in the last 2 minutes.
+```
+
+**Verification:**
+- Backend health endpoint returns 200 OK
+- LMS tools (labs, learners, etc.) work correctly
+- No ERROR level logs in VictoriaLogs
+- Traces show successful request completion
+
+### Files Modified
+
+**Task 4A:**
+- `nanobot/workspace/skills/observability/SKILL.md` — Enhanced with investigation flow
+
+**Task 4C:**
+- `backend/src/lms_backend/routers/items.py` — Fixed exception handling to return 500 for database errors
+
+### Acceptance Criteria
+
+✅ Observability skill guides agent to chain log and trace tools
+✅ Created recurring health check from Flutter chat via cron tool
+✅ Proactive health report appears in chat while failure present
+✅ Fixed planted bug in backend code (404 → 500 for DB errors)
+✅ After fix, failure path reveals real underlying error
+✅ After recovery, health report says system looks healthy
+✅ REPORT.md contains evidence from Task 4A, 4B, and 4C

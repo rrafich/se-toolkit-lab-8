@@ -1,4 +1,65 @@
 {
   "version": 1,
-  "jobs": []
+  "jobs": [
+    {
+      "id": "b37762b2",
+      "name": "LMS Health Check: Check LMS ba",
+      "enabled": true,
+      "schedule": {
+        "kind": "every",
+        "atMs": null,
+        "everyMs": 120000,
+        "expr": null,
+        "tz": null
+      },
+      "payload": {
+        "kind": "agent_turn",
+        "message": "LMS Health Check: Check LMS backend health, search for errors in logs from the last 2 minutes, inspect a trace if errors found, and post a short summary to chat 06d56e75-c902-430d-ad15-e798841ba6e5. If no errors, report system looks healthy.",
+        "deliver": true,
+        "channel": "webchat",
+        "to": "06d56e75-c902-430d-ad15-e798841ba6e5"
+      },
+      "state": {
+        "nextRunAtMs": 1775170702994,
+        "lastRunAtMs": 1775170573125,
+        "lastStatus": "ok",
+        "lastError": null,
+        "runHistory": [
+          {
+            "runAtMs": 1775170025533,
+            "status": "ok",
+            "durationMs": 18579,
+            "error": null
+          },
+          {
+            "runAtMs": 1775170164132,
+            "status": "ok",
+            "durationMs": 16746,
+            "error": null
+          },
+          {
+            "runAtMs": 1775170300900,
+            "status": "ok",
+            "durationMs": 17053,
+            "error": null
+          },
+          {
+            "runAtMs": 1775170437988,
+            "status": "ok",
+            "durationMs": 15121,
+            "error": null
+          },
+          {
+            "runAtMs": 1775170573125,
+            "status": "ok",
+            "durationMs": 9869,
+            "error": null
+          }
+        ]
+      },
+      "createdAtMs": 1775169905532,
+      "updatedAtMs": 1775170582994,
+      "deleteAfterRun": false
+    }
+  ]
 }
