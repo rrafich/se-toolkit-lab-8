@@ -15,7 +15,7 @@
   "providers": {
     "custom": {
       "apiKey": "my-secret-qwen-key",
-      "apiBase": "http://localhost:42006/v1",
+      "apiBase": "http://localhost:42005/v1",
       "enabled": true
     }
   },
@@ -36,6 +36,14 @@
         "env": {
           "NANOBOT_LMS_BACKEND_URL": "http://localhost:42002",
           "NANOBOT_LMS_API_KEY": "my-lms-api-key"
+        }
+      },
+      "observability": {
+        "command": "python",
+        "args": ["-m", "mcp_obs"],
+        "env": {
+          "NANOBOT_VICTORIALOGS_URL": "http://localhost:42010",
+          "NANOBOT_VICTORIATRACES_URL": "http://localhost:42011"
         }
       }
     }
