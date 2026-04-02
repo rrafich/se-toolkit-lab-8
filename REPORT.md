@@ -167,16 +167,12 @@ This confirms the LMS skill is working - the agent now asks for lab selection wh
 
 ### Startup Log Excerpt
 
-```
+```terminal
 nanobot-1  | Using config: /tmp/config.resolved.json
-nanobot-1  | 🐈 Starting nanobot gateway version 0.1.4.post5 on port 18790...
 nanobot-1  | ✓ Channels enabled: webchat
-nanobot-1  | ✓ Heartbeat: every 1800s
-nanobot-1  | 2026-04-02 11:08:15.218 | INFO     | nanobot.agent.tools.mcp:connect_mcp_servers:246 
-- MCP server 'lms': connected, 9 tools registered
-nanobot-1  | 2026-04-02 11:08:17.543 | INFO     | nanobot.agent.tools.mcp:connect_mcp_servers:246 
-- MCP server 'webchat': connected, 1 tools registered
-nanobot-1  | 2026-04-02 11:08:17.543 | INFO     | nanobot.agent.loop:run:280 - Agent loop started
+nanobot-1  | 2026-04-02 14:00:24.582 | INFO     | nanobot.agent.tools.mcp:connect_mcp_servers:246 - MCP server 'lms': connected, 9 tools registered
+nanobot-1  | 2026-04-02 14:00:26.615 | INFO     | nanobot.agent.tools.mcp:connect_mcp_servers:246 - MCP server 'webchat': connected, 1 tools registered
+nanobot-1  | 2026-04-02 14:00:26.615 | INFO     | nanobot.agent.loop:run:280 - Agent loop started
 ```
 
 ### Configuration Changes
@@ -220,182 +216,53 @@ nanobot-1  | 2026-04-02 11:08:17.543 | INFO     | nanobot.agent.loop:run:280 - A
 ### Submodule Added
 
 - **`nanobot-websocket-channel/`** — Git submodule containing:
-  - `nanobot-webchat/` — WebSocket channel plugin for nanobot
-  - `mcp-webchat/` — MCP server for structured UI messages
   - `client-web-flutter/` — Flutter web chat client
-  - `nanobot-channel-protocol/` — Channel protocol definitions
-
-### Packages Installed
-
-```terminal
-cd nanobot
-uv add nanobot-webchat --editable ../nanobot-websocket-channel/nanobot-webchat
-uv add mcp-webchat --editable ../nanobot-websocket-channel/mcp-webchat
-```
-
-### Container Status
-
-```
-NAME                                STATUS
-se-toolkit-lab-8-nanobot-1          Up
-se-toolkit-lab-8-caddy-1            Up
-se-toolkit-lab-8-backend-1          Up
-se-toolkit-lab-8-qwen-code-api-1    Up (healthy)
-```
-
-### Architecture
-
-```
-browser -> caddy (port 42002) -> nanobot webchat channel -> nanobot gateway -> mcp_lms -> backend
-                                          |
-                                          +-> nanobot gateway -> qwen-code-api -> Qwen
-                                          |
-                                          +-> nanobot gateway -> mcp_webchat -> browser
-```
-
-### WebSocket Test
-
-Successfully tested WebSocket connection:
-
-```terminal
-$ uv run --with websockets python -c "
-import asyncio
-import websockets
-
-async def test():
-    async with websockets.connect('ws://localhost:42002/ws/chat?access_key=my-nanobot-access-key') as ws:
-        print('CONNECTED')
-        await ws.send('hello')
-        response = await asyncio.wait_for(ws.recv(), timeout=30)
-        print(f'RESPONSE: {response}')
-
-asyncio.run(test())
-"
-
-CONNECTED
-RESPONSE: {"type":"text","content":"Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?","format":"markdown"}
-```
-
-### Flutter Client Verification
-
-Flutter web client is serving content at `/flutter`:
-- Main page loads with proper HTML
-- `main.dart.js` is present and being served
-- WebSocket connection works through Caddy proxy
+  - `nanobot-webchat/` — WebSocket channel implementation
+  - `mcp-webchat/` — MCP webchat server for agent communication
 
 ### Full Stack Verification
 
-The complete request flow is working:
-```
-browser -> caddy:42002 -> /ws/chat -> nanobot:8765 -> nanobot gateway -> qwen-code-api -> Qwen
-                                                              -> mcp_lms -> backend
-                                                              -> mcp_webchat -> browser
-```
-
-Latest nanobot logs show successful message processing:
-```
-nanobot-1  | 2026-04-02 15:06:50.763 | INFO     | nanobot.agent.loop:_process_message:425 - Processing message from webchat:5d9ec948-4985-45a6-9ccb-504d63bd70cd: hello
-nanobot-1  | 2026-04-02 15:06:54.193 | INFO     | nanobot.agent.loop:_process_message:479 - Response to webchat:5d9ec948-4985-45a6-9ccb-504d63bd70cd: Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?
-```
-
-### Note on Qwen Credentials
-
-The qwen-code-api service requires valid OAuth credentials to access the Qwen API.
-If the container shows "Token refresh returned a non-JSON response" errors,
-it means the credentials have expired and the token refresh is being blocked by WAF.
-
-**Solution:** Restart the qwen-code-api container to pick up fresh credentials from the host:
+#### 1. Flutter Web Client Accessible
 
 ```terminal
-docker compose --env-file .env.docker.secret restart qwen-code-api
+$ curl -s http://localhost:42002/flutter/ | head -20
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/flutter/">
+  <meta charset="UTF-8">
+  <title>Nanobot</title>
+  ...
 ```
 
-The container's entrypoint script copies credentials from `/mnt/qwen-creds` (mounted from `~/.qwen` on the host)
-to `/home/nonroot/.qwen` at each startup.
+#### 2. WebSocket Connection Working
 
-### Task 2 Verification Test Results
+The nanobot gateway is listening on the WebSocket endpoint and processing messages:
 
-**LLM Connectivity Test:**
 ```terminal
-$ uv run --with websockets python -c "
-import asyncio, websockets, json
-async def test():
-    async with websockets.connect('ws://127.0.0.1:42002/ws/chat?access_key=my-nanobot-access-key') as ws:
-        await ws.send('How is the backend doing?')
-        response = await asyncio.wait_for(ws.recv(), timeout=60)
-        data = json.loads(response)
-        print('RESPONSE:', data.get('content', '')[:200])
-asyncio.run(test())
-"
-
-RESPONSE: I'll check the LMS backend health for you. The LMS backend is healthy! It's currently tracking 56 items.
-
-PASS: LLM is responding with real LMS data
+$ docker compose logs nanobot | grep "Processing message"
+nanobot-1  | 2026-04-02 15:47:42.919 | INFO | nanobot.agent.loop:_process_message:425 - Processing message from webchat:2214ad19-3d6b-46f8-ab68-713758825a88: hello
+nanobot-1  | 2026-04-02 16:04:21.430 | INFO | nanobot.agent.loop:_process_message:425 - Processing message from webchat:f05981ca-4920-49dd-92fc-db8e0ea97b32: hello
 ```
 
-**Flutter Client Test:**
-- Access URL: http://localhost:42002/flutter
-- Status: ✅ Serving content (main.dart.js present)
-- WebSocket: ✅ Connecting successfully
+#### 3. Agent Responds via WebSocket
 
-**WebSocket Endpoint Test:**
-- URL: ws://localhost:42002/ws/chat?access_key=my-nanobot-access-key
-- Status: ✅ Accepting connections
-- Agent Response: ✅ Returning valid responses
-
-**Full Stack Test:**
-```
-browser -> caddy:42002 -> /ws/chat -> nanobot:8765 -> gateway -> qwen-code-api -> Qwen
-                                                        -> mcp_lms -> backend (healthy, 56 items)
-                                                        -> mcp_webchat -> browser
-```
-Status: ✅ All hops working
-
----
-
-## Task 2 Completion Summary
-
-| Checkpoint | Status |
-|------------|--------|
-| Nanobot Docker service running | ✅ PASS |
-| WebSocket channel enabled | ✅ PASS |
-| Flutter client serving | ✅ PASS |
-| WebSocket accepting connections | ✅ PASS |
-| Agent responding via LLM | ✅ PASS |
-| LMS integration working | ✅ PASS |
-| REPORT.md evidence added | ✅ PASS |
-
-### Flutter Client Conversation Evidence
-
-**Conversation via WebSocket (simulating Flutter client):**
-
-```
-User: hello
-Bot: Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?
-
-User: What can you do in this system?
-Bot: I can help you with the Learning Management System (LMS). Here's what I can do:
-     - Check lab information and pass rates
-     - View learner data and progress
-     - Monitor backend health
-     - Answer questions about the system
-
-User: How is the backend doing?
-Bot: I'll check the LMS backend health for you. The LMS backend is healthy! 
-     It's currently tracking 56 items.
-
-User: Show me the scores
-Bot: Which lab would you like to see the pass rates for? Here are the available labs:
-     1. Lab 01 – Products, Architecture & Roles
-     2. Lab 02 — Run, Fix, and Deploy a Backend Service
-     3. Lab 03 — Backend API: Explore, Debug, Implement, Deploy
-     4. Lab 04 — Testing, Front-end, and AI Agents
-     5. Lab 05 — Data Pipeline and Analytics Dashboard
-     6. Lab 06 — Build Your Own Agent
-     7. Lab 07 — Build a Client with an AI Coding Agent
-     8. Lab 08 — lab-08
+```terminal
+$ docker compose logs nanobot | grep "Response to"
+nanobot-1  | 2026-04-02 15:47:48.310 | INFO | nanobot.agent.loop:_process_message:479 - Response to webchat:2214ad19-3d6b-46f8-ab68-713758825a88: Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?
+nanobot-1  | 2026-04-02 16:04:26.584 | INFO | nanobot.agent.loop:_process_message:479 - Response to webchat:f05981ca-4920-49dd-92fc-db8e0ea97b32: Hello! 👋 I'm nanobot, your AI assistant. How can I help you today?
 ```
 
-**Structured UI Test:**
-When asking "Show me the scores" without specifying a lab, the agent correctly identifies
-multiple labs exist and should render a structured choice prompt in the Flutter client.
+### Architecture Flow
+
+```
+browser -> caddy (port 42002) -> nanobot webchat channel (port 8765) -> nanobot gateway -> mcp_lms -> backend
+nanobot gateway -> qwen-code-api -> Qwen LLM
+nanobot gateway -> mcp_webchat -> nanobot webchat UI relay -> browser
+```
+
+All components are running and communicating successfully:
+- ✅ Flutter web client served at `/flutter/`
+- ✅ WebSocket accepts connections at `/ws/chat`
+- ✅ Agent processes messages and responds
+- ✅ Full stack working end-to-end
